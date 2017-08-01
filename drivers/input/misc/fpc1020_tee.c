@@ -497,6 +497,7 @@ static int fpc1020_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	int rc = 0;
 	int irqf;
+	int id0, id1, id2;
 	struct device_node *np = dev->of_node;
 
 	struct fpc1020_data *fpc1020 = devm_kzalloc(dev, sizeof(*fpc1020),
@@ -525,7 +526,7 @@ static int fpc1020_probe(struct platform_device *pdev)
 		goto exit;
 
 	rc = gpio_direction_input(fpc1020->irq_gpio);
-	
+
 	if (rc) {
 		dev_err(fpc1020->dev,
 			"gpio_direction_input (irq) failed.\n");
@@ -576,7 +577,7 @@ static int fpc1020_probe(struct platform_device *pdev)
 	rc = fpc1020_pinctrl_select(fpc1020, true);
 	if (rc)
 		goto exit;
-		
+
     #endif
     rc = fpc1020_input_init(fpc1020);
     if (rc)
@@ -614,7 +615,7 @@ static int fpc1020_probe(struct platform_device *pdev)
 		dev_err(dev, "could not create sysfs\n");
 		goto exit;
 	}
-	
+
     #if 0 //changhua remove HW reset here,move to HAL,after spi cs pin become high
 	rc = gpio_direction_output(fpc1020->rst_gpio, 1);
 
@@ -626,10 +627,10 @@ static int fpc1020_probe(struct platform_device *pdev)
 
 	gpio_set_value(fpc1020->rst_gpio, 1);
 	udelay(FPC1020_RESET_HIGH1_US);
-	
+
 	gpio_set_value(fpc1020->rst_gpio, 0);
 	udelay(FPC1020_RESET_LOW_US);
-	
+
 	gpio_set_value(fpc1020->rst_gpio, 1);
 	udelay(FPC1020_RESET_HIGH2_US);
     #endif
@@ -647,38 +648,33 @@ static int fpc1020_probe(struct platform_device *pdev)
     *fingerchip/
     *   qtech    0            1             0
     *   Goodix   1            0             1
-    *   
+    *
     */
-    fpc1020->sensor_version = 0x02;
-	if(gpio_get_value(fpc1020->id0_gpio) && gpio_get_value(fpc1020->id1_gpio)&&\
-	   gpio_get_value(fpc1020->id2_gpio)){
-        push_component_info(FINGERPRINTS,"fpc1245" , "FPC(OF)");
-        fpc1020->sensor_version = 0x01;
-    }else if(gpio_get_value(fpc1020->id0_gpio) && !gpio_get_value(fpc1020->id1_gpio)&&\
-            !gpio_get_value(fpc1020->id2_gpio)){
-        push_component_info(FINGERPRINTS,"fpc1245" , "FPC(Primax)");
-        fpc1020->sensor_version = 0x01;
-    }else if(!gpio_get_value(fpc1020->id0_gpio) && !gpio_get_value(fpc1020->id1_gpio)&&\
-            gpio_get_value(fpc1020->id2_gpio)){
-        push_component_info(FINGERPRINTS,"fpc1245" , "FPC(truly)");
-        fpc1020->sensor_version = 0x01;
-    }else if(gpio_get_value(fpc1020->id0_gpio) && gpio_get_value(fpc1020->id1_gpio)&&\
-            !gpio_get_value(fpc1020->id2_gpio)){
-        push_component_info(FINGERPRINTS,"fpc1263" , "FPC(OF)");
-    }else if(!gpio_get_value(fpc1020->id0_gpio) && !gpio_get_value(fpc1020->id1_gpio)&&\
-            !gpio_get_value(fpc1020->id2_gpio)){
-        push_component_info(FINGERPRINTS,"fpc1263" , "FPC(Primax)");
-    }else if(!gpio_get_value(fpc1020->id0_gpio) && gpio_get_value(fpc1020->id1_gpio)&&\
-            gpio_get_value(fpc1020->id2_gpio)){
-        push_component_info(FINGERPRINTS,"fpc1263" , "FPC(truly)");
-    }else if(!gpio_get_value(fpc1020->id0_gpio) && gpio_get_value(fpc1020->id1_gpio)&&\
-            !gpio_get_value(fpc1020->id2_gpio)){
-        push_component_info(FINGERPRINTS,"fpc1263" , "FPC(f/p)");
-    }else if(gpio_get_value(fpc1020->id0_gpio) && !gpio_get_value(fpc1020->id1_gpio)&&\
-            gpio_get_value(fpc1020->id2_gpio)){
-        push_component_info(FINGERPRINTS,"fpc1263" , "FPC(Goodix)");
-    }else{
-        push_component_info(FINGERPRINTS,"fpc" , "FPC");
+	fpc1020->sensor_version = 0x02;
+	id0 = gpio_get_value(fpc1020->id0_gpio);
+	id1 = gpio_get_value(fpc1020->id1_gpio);
+	id2 = gpio_get_value(fpc1020->id2_gpio);
+	if (id0 && id1 && id2) {
+		push_component_info(FINGERPRINTS, "fpc1245", "FPC(OF)");
+		fpc1020->sensor_version = 0x01;
+	} else if (id0 && !id1 && !id2) {
+		push_component_info(FINGERPRINTS, "fpc1245", "FPC(Primax)");
+		fpc1020->sensor_version = 0x01;
+	} else if (!id0 && !id1 && id2) {
+		push_component_info(FINGERPRINTS, "fpc1245", "FPC(truly)");
+		fpc1020->sensor_version = 0x01;
+	} else if (id0 && id1 && !id2) {
+		push_component_info(FINGERPRINTS, "fpc1263", "FPC(OF)");
+	} else if (!id0 && !id1 && !id2) {
+		push_component_info(FINGERPRINTS, "fpc1263", "FPC(Primax)");
+	} else if (!id0 && id1 && id2) {
+		push_component_info(FINGERPRINTS, "fpc1263", "FPC(truly)");
+	} else if (!id0 && id1 && !id2) {
+		push_component_info(FINGERPRINTS, "fpc1263", "FPC(f/p)");
+	} else if (id0 && !id1 && id2) {
+		push_component_info(FINGERPRINTS, "fpc1263", "FPC(Goodix)");
+	} else {
+		push_component_info(FINGERPRINTS, "fpc", "PC");
     }
 
 	dev_info(dev, "%s: ok\n", __func__);
