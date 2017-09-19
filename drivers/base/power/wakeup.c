@@ -34,6 +34,8 @@ static bool enable_wlan_ws = true;
 module_param(enable_wlan_ws, bool, 0644);
 static bool enable_timerfd_ws = true;
 module_param(enable_timerfd_ws, bool, 0644);
+static bool enable_wcnss_filter_lock_ws = true;
+module_param(enable_wcnss_filter_lock_ws, bool, 0644);
 
 /*
  * If set, the suspend/hibernate code will abort transitions to a sleep state
@@ -589,6 +591,8 @@ static bool wakeup_source_blocker(struct wakeup_source *ws)
 				!strncmp(ws->name, "qcom_rx_wakelock", wslen)) ||
 			(!enable_wlan_wow_wl_ws &&
 	                        !strncmp(ws->name, "wlan_wow_wl", wslen)) ||
+            (!enable_wcnss_filter_lock_ws &&
+				!strncmp(ws->name, "wcnss_filter_lock", wslen)) ||
 			(!enable_wlan_ws &&
 				!strncmp(ws->name, "wlan", wslen)) ||
 			(!enable_timerfd_ws &&
